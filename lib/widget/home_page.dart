@@ -2,10 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-/// Оригинальный пример счетчика, который генерируется при создании нового
-/// Flutter приложения.
-///
-/// При увеличении значения счетчика перерисовывается буквально весь экран.
+/// Пример использования ValueNotifier совместно с ValueListenableBuilder
+/// для отслеживания изменения значения счетчика и перерисовки только
+/// минимально необходимой части интерфейса.
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -14,13 +13,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+  final _counter = ValueNotifier<int>(0);
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +25,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('StatefulWidget and setState()'),
+        title: const Text('ValueNotifier and ValueListenableBuilder'),
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -46,13 +39,20 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               TextWidget(),
-              CounterWidget(counter: _counter),
+              // Благодаря ValueListenableBuilder перерисовываются только его
+              // дочерние виджеты, зависящие от значения счетчика.
+              ValueListenableBuilder<int>(
+                valueListenable: _counter,
+                builder: (context, value, _) {
+                  return CounterWidget(counter: value);
+                },
+              ),
             ],
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () => _counter.value += 1,
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
