@@ -2,9 +2,36 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-/// Пример использования ValueNotifier совместно с ValueListenableBuilder
-/// для отслеживания изменения значения счетчика и перерисовки только
-/// минимально необходимой части интерфейса.
+/// Если требуется зависимость от мутабельных типов данных или моделей с
+/// несколькими меняющимися параметрами, то имеет смысл использовать
+/// ChangeNotifier.
+///
+/// Для справки:
+/// ValueNotifier - это дочерний класс ChangeNotifier, содержащий единственное
+/// значение.
+class CounterModel with ChangeNotifier {
+  int _count = 0;
+
+  int get count => _count;
+
+  void increment() {
+    _count += 1;
+    // Метод для оповещения слушателей об изменении в CounterModel.
+    notifyListeners();
+  }
+
+  void reset() {
+    if (_count != 0) {
+      _count = 0;
+      // Метод для оповещения слушателей об изменении в CounterModel.
+      notifyListeners();
+    }
+  }
+}
+
+/// Пример использования ChangeNotifier совместно с ListenableBuilder
+/// для отслеживания изменения мутабельной модели и перерисовки только
+/// следящие за моделью виджеты.
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -13,7 +40,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final _counter = ValueNotifier<int>(0);
+  final _counter = CounterModel();
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('ValueNotifier and ValueListenableBuilder'),
+        title: const Text('ChangeNotifier and ListenableBuilder'),
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -34,19 +61,17 @@ class _MyHomePageState extends State<MyHomePage> {
             width: 8,
           ),
         ),
-        // Чтобы избежать перерисовки части дочерних виджетов у
-        // ValueListenableBuilder, которые не зависят от значения счетчика
-        // (например, TextWidget), такие виджеты можно вынести в child.
-        child: ValueListenableBuilder<int>(
-          valueListenable: _counter,
-          builder: (context, value, child) {
+        // ListenableBuilder работает аналогично рассмотренному ранее
+        // ValueListenableBuilder.
+        child: ListenableBuilder(
+          listenable: _counter,
+          builder: (context, child) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   child!,
-                  // Поднимаем ValueListenableBuilder выше по дереву виджетов.
-                  CounterWidget(counter: value),
+                  CounterWidget(counter: _counter.count),
                 ],
               ),
             );
@@ -56,10 +81,21 @@ class _MyHomePageState extends State<MyHomePage> {
           child: TextWidget(),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _counter.value += 1,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: () => _counter.increment(),
+            tooltip: 'Increment',
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(width: 16),
+          FloatingActionButton(
+            onPressed: () => _counter.reset(),
+            tooltip: 'Reset',
+            child: const Icon(Icons.refresh_outlined),
+          ),
+        ],
       ),
     );
   }
