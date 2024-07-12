@@ -34,21 +34,26 @@ class _MyHomePageState extends State<MyHomePage> {
             width: 8,
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              TextWidget(),
-              // Благодаря ValueListenableBuilder перерисовываются только его
-              // дочерние виджеты, зависящие от значения счетчика.
-              ValueListenableBuilder<int>(
-                valueListenable: _counter,
-                builder: (context, value, _) {
-                  return CounterWidget(counter: value);
-                },
+        // Чтобы избежать перерисовки части дочерних виджетов у
+        // ValueListenableBuilder, которые не зависят от значения счетчика
+        // (например, TextWidget), такие виджеты можно вынести в child.
+        child: ValueListenableBuilder<int>(
+          valueListenable: _counter,
+          builder: (context, value, child) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  child!,
+                  // Поднимаем ValueListenableBuilder выше по дереву виджетов.
+                  CounterWidget(counter: value),
+                ],
               ),
-            ],
-          ),
+            );
+          },
+          // Данный виджет не будет перерисовываться при изменении значения
+          // счетчика.
+          child: TextWidget(),
         ),
       ),
       floatingActionButton: FloatingActionButton(
