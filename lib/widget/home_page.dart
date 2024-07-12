@@ -1,33 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-
-/// Если требуется зависимость от мутабельных типов данных или моделей с
-/// несколькими меняющимися параметрами, то имеет смысл использовать
-/// ChangeNotifier.
-///
-/// Для справки:
-/// ValueNotifier - это дочерний класс ChangeNotifier, содержащий единственное
-/// значение.
-class CounterModel with ChangeNotifier {
-  int _count = 0;
-
-  int get count => _count;
-
-  void increment() {
-    _count += 1;
-    // Метод для оповещения слушателей об изменении в CounterModel.
-    notifyListeners();
-  }
-
-  void reset() {
-    if (_count != 0) {
-      _count = 0;
-      // Метод для оповещения слушателей об изменении в CounterModel.
-      notifyListeners();
-    }
-  }
-}
+import 'package:notification_listeners_example/model/counter_model.dart';
 
 /// Пример использования ChangeNotifier совместно с ListenableBuilder
 /// для отслеживания изменения мутабельной модели и перерисовки только
@@ -71,7 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   child!,
-                  CounterWidget(counter: _counter.count),
+                  CounterWidget(counterNotifier: _counter),
                 ],
               ),
             );
@@ -83,6 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           FloatingActionButton(
             onPressed: () => _counter.increment(),
@@ -90,10 +65,22 @@ class _MyHomePageState extends State<MyHomePage> {
             child: const Icon(Icons.add),
           ),
           const SizedBox(width: 16),
-          FloatingActionButton(
-            onPressed: () => _counter.reset(),
-            tooltip: 'Reset',
-            child: const Icon(Icons.refresh_outlined),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Изменение цвета счетчика по нажатию соответствующей кнопки.
+              FloatingActionButton(
+                onPressed: () => _counter.changeColor(),
+                tooltip: 'Change Color',
+                child: const Icon(Icons.color_lens_outlined),
+              ),
+              const SizedBox(height: 16),
+              FloatingActionButton(
+                onPressed: () => _counter.reset(),
+                tooltip: 'Reset',
+                child: const Icon(Icons.refresh_outlined),
+              ),
+            ],
           ),
         ],
       ),
@@ -126,22 +113,17 @@ class TextWidget extends StatelessWidget {
 class CounterWidget extends StatelessWidget {
   const CounterWidget({
     super.key,
-    required int counter,
-  }) : _counter = counter;
+    required CounterModel counterNotifier,
+  }) : _counterNotifier = counterNotifier;
 
-  final int _counter;
+  final CounterModel _counterNotifier;
 
   @override
   Widget build(BuildContext context) {
-    // Генерация случайного цвета счетчика для контроля его перерисовки.
-    final counterColor = Colors.primaries[Random().nextInt(
-      Colors.primaries.length,
-    )];
-
     return Text(
-      '$_counter',
+      '${_counterNotifier.count}',
       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: counterColor,
+            color: _counterNotifier.color,
           ),
     );
   }
