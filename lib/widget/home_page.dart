@@ -1,11 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:notification_listeners_example/model/counter_model.dart';
+import 'package:notification_listeners_example/widget/counter_provider.dart';
 
-/// Пример использования ChangeNotifier совместно с ListenableBuilder
-/// для отслеживания изменения мутабельной модели и перерисовки только
-/// следящие за моделью виджеты.
+/// Пример использования InheritedNotifier, благодаря которому возможно
+/// встроить в context модель нашего счетчика и обращаться к ней из любого
+/// места ниже по дереву.
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -14,8 +14,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final _counter = CounterModel();
-
   @override
   Widget build(BuildContext context) {
     // Генерация случайного цвета Scaffold для контроля его перерисовки.
@@ -23,10 +21,18 @@ class _MyHomePageState extends State<MyHomePage> {
       Colors.primaries.length,
     )];
 
+    // Получаем модель из контекста используя самописный провайдер,
+    // наследованный от InheritedNotifier.
+    //
+    // В данном случае, мы не подписываемся на изменения (listen == false),
+    // поскольку в текущем виджете мы только обращаемся к методам модели
+    // и не зависим от значения счетчика напрямую.
+    final counter = CounterProvider.of(context, listen: false);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('ChangeNotifier and ListenableBuilder'),
+        title: const Text('InheritedNotifier'),
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -35,24 +41,17 @@ class _MyHomePageState extends State<MyHomePage> {
             width: 8,
           ),
         ),
-        // ListenableBuilder работает аналогично рассмотренному ранее
-        // ValueListenableBuilder.
-        child: ListenableBuilder(
-          listenable: _counter,
-          builder: (context, child) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  child!,
-                  CounterWidget(counterNotifier: _counter),
-                ],
-              ),
-            );
-          },
-          // Данный виджет не будет перерисовываться при изменении значения
-          // счетчика.
-          child: TextWidget(),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              TextWidget(),
+              // Нам теперь не нужно ничего передавать через конструктор -
+              // виджет будет получать значение счетчика через контекст
+              // внутри своего метода build().
+              const CounterWidget(),
+            ],
+          ),
         ),
       ),
       floatingActionButton: Row(
@@ -60,7 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           FloatingActionButton(
-            onPressed: () => _counter.increment(),
+            onPressed: () => counter.increment(),
             tooltip: 'Increment',
             child: const Icon(Icons.add),
           ),
@@ -70,13 +69,13 @@ class _MyHomePageState extends State<MyHomePage> {
             children: [
               // Изменение цвета счетчика по нажатию соответствующей кнопки.
               FloatingActionButton(
-                onPressed: () => _counter.changeColor(),
+                onPressed: () => counter.changeColor(),
                 tooltip: 'Change Color',
                 child: const Icon(Icons.color_lens_outlined),
               ),
               const SizedBox(height: 16),
               FloatingActionButton(
-                onPressed: () => _counter.reset(),
+                onPressed: () => counter.reset(),
                 tooltip: 'Reset',
                 child: const Icon(Icons.refresh_outlined),
               ),
@@ -93,6 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
 /// Конструктор виджета нарочно сделан не константным, чтобы виджет мог
 /// перерисовываться при обновлении родительского виджета.
 class TextWidget extends StatelessWidget {
+  // ignore: prefer_const_constructors_in_immutables
   TextWidget({super.key});
 
   @override
@@ -111,19 +111,23 @@ class TextWidget extends StatelessWidget {
 
 /// Виджет счетчика.
 class CounterWidget extends StatelessWidget {
-  const CounterWidget({
-    super.key,
-    required CounterModel counterNotifier,
-  }) : _counterNotifier = counterNotifier;
-
-  final CounterModel _counterNotifier;
+  const CounterWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Обращаемся к модели счетчика через контекст и подписываемся на её
+    // изменения (по умолчанию listen == true).
+    // При этом, в случае изменения модели, перерисовываться будет только
+    // данный виджет, зависящий от значения счетчика.
+    final counter = CounterProvider.of(context);
+
     return Text(
-      '${_counterNotifier.count}',
+      '${counter.count}',
+      // Стоит обратить внимание на очевидную схожесть работы Theme с нашим
+      // CounterProvider. Все потому что под капотом Theme также использует
+      // метод dependOnInheritedWidgetOfExactType().
       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: _counterNotifier.color,
+            color: counter.color,
           ),
     );
   }
