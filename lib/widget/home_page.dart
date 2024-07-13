@@ -58,10 +58,25 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          FloatingActionButton(
-            onPressed: () => counter.increment(),
-            tooltip: 'Increment',
-            child: const Icon(Icons.add),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Поскольку модель счетчика передается через контекст и данный
+              // виджет MyHomePage напрямую с ней никак не связан, то обновление
+              // видежта никак не влияет на состояние значения счетчика,
+              // а только на зависимый от него виджет текста.
+              FloatingActionButton(
+                onPressed: () => setState(() {}),
+                tooltip: 'Reload',
+                child: const Icon(Icons.bolt),
+              ),
+              const SizedBox(height: 16),
+              FloatingActionButton(
+                onPressed: () => counter.increment(),
+                tooltip: 'Increment',
+                child: const Icon(Icons.add),
+              ),
+            ],
           ),
           const SizedBox(width: 16),
           Column(
